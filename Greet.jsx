@@ -1,272 +1,172 @@
-import React, { useEffect, useState } from 'react';
-import { Col, Container, Row, Table, Form, FormGroup, Button, Modal } from 'react-bootstrap';
-import { Label, Input } from "reactstrap";
+import React, { useState, useEffect } from 'react';
+import {
+  Button,
+  Col,
+  Container,
+  Row,
+  Table,
+  Form,
+  FormGroup,
+  Input,
+  Label,
+} from 'reactstrap';
 
-const Greet = () => {
-  const [show, setShow] = useState(false);
-  const handleClose = () => setShow(false);
-  const handleShow = () => setShow(true);
+// Initial State
+const initialUserState = {
+  id: '',
+  firstName: '',
+  lastName: '',
+  gender: '',
+  hobbies: [],
+  email: '',
+  password: '',
+  cPassword: '',
+};
 
-  const [Profile, setProfile] = useState({
-    id: Date.now(),
-    FirstName: "",
-    LastName: "",
-    UserName: "",
-    Email: "",
-    Password: "",
-    ConfirmPassword: "",
-    Gender: "",
-    Hobbies: []
+const App = () => {
+  const [profiles, setProfiles] = useState(() => JSON.parse(localStorage.getItem('profiles')) || []);
+  const [user, setUser] = useState(initialUserState);
+  const [showForm, setShowForm] = useState(false);
+  const [editId, setEditId] = useState(null);
 
-  })
-  // const [AllProfile, setAllProfile] = useState(JSON.parse(localStorage.getItem("AllProfile")) || [])
-  const [AllProfile, setAllProfile] = useState(JSON.parse(localStorage.getItem("AllProfile")) || [])
-  const [editId, seteditId] = useState(null)
-
-  const onInputChange = (event) => {
-    setProfile({
-      ...Profile,
-      [event.target.name]: event.target.value,
-    })
-  }
-
-  const onHandleSubmit = (e) => {
-    e.preventDefault()
-    if (editId !== null) {
-      AllProfile.splice(AllProfile.findIndex((elm) => elm.id === editId), 1, Profile)
-      seteditId(null)
-      setShow()
-    } else {
-      setAllProfile([
-        ...AllProfile, Profile
-      ])
-      resetProfile()
-      setShow()
-    }
-
-  }
-
-  const CheckBoxChanged = (event) => {
-    if (event.target.checked) {
-      setProfile({
-        ...Profile, Hobbies: [...Profile.Hobbies, event.target.value]
-
-      })
-    } else {
-      setProfile({
-        ...Profile, Hobbies: Profile.Hobbies.filter((elm) => elm !== event.target.value)
-      });
-    }
-
-  }
-
+  // Sync profiles with localStorage
   useEffect(() => {
-    localStorage.setItem("AllProfile", JSON.stringify(AllProfile))
-  }, [AllProfile])
+    localStorage.setItem('profiles', JSON.stringify(profiles));
+  }, [profiles]);
 
-  // Delete 
-  const onDelete = (id) => {
-    // window.confirm(" Are you Sure Want To Delete?")
-    setAllProfile(AllProfile.filter(element => element.id !== id))
-  }
-  //Edit
-  const OnEditButton = (id) => {
-    // debugger
-    seteditId(id)
-    setProfile({ ...Profile, id: id })
-    setProfile(AllProfile.filter(element => element.id === id)[0])
-    setShow(true) 
+  const resetProfile = () => setUser(initialUserState);
 
-  }
-  //reset
-  const resetProfile = () => {
-    setProfile({
-      id: Date.now(),
-      FirstName: "",
-      LastName: "",
-      UserName: "",
-      Email: "",
-      Password: "",
-      ConfirmPassword: "",
-      Gender: "",
-      Hobbies: []
+  // Handle Input Change
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    if (type === 'checkbox') {
+      setUser((prev) => ({
+        ...prev,
+        hobbies: checked ? [...prev.hobbies, value] : prev.hobbies.filter((h) => h !== value),
+      }));
+    } else {
+      setUser((prev) => ({ ...prev, [name]: value }));
+    }
+  };
 
-    })
-  }
-  // console.log(AllProfile) 
+  // Handle Submit
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (editId !== null) {
+      setProfiles(profiles.map((profile) => (profile.id === editId ? { ...user, id: editId } : profile)));
+    } else {
+      setProfiles([...profiles, { ...user, id: Date.now().toString() }]);
+    }
+    resetProfile();
+    setEditId(null);
+    setShowForm(false);
+  };
+
+  // Edit Employee
+  const handleEdit = (id) => {
+    const selectedProfile = profiles.find((profile) => profile.id === id);
+    setUser(selectedProfile);
+    setEditId(id);
+    setShowForm(true);
+  };
+
+  // Delete Employee
+  const handleDelete = (id) => setProfiles(profiles.filter((profile) => profile.id !== id));
+
   return (
-    <>
-      <Container fluid>
-        <Container>
-          <Row>
-            <Col>
-              <h2>FUNCTION CRUD</h2>
-            </Col>
-            <Col>
-              <Button variant="outline-primary" onClick={handleShow}>
-                Click Here
-              </Button>
-            </Col>
-          </Row>
-          <Table striped >
-            <thead >
-              <tr className='table-info'>
-                <th>ID</th>
-                <th>FirstName</th>
-                <th>LastName</th>
-                <th>Username</th>
-                <th>E-Mail</th>
-                <th>Gender</th>
-                <th>Hobbies</th>
-                <th>Password</th>
-                <th>Action</th>
-
-              </tr>
-            </thead>
-            <tbody className='table-warning'>
-              {
-                AllProfile?.map((item, index) => {
-                  return (
-                    <tr key={index.id}>
-                      <td>{item.id}</td>
-                      <td>{item.FirstName}</td>
-                      <td>{item.LastName}</td>
-                      <td>{item.UserName}</td>
-                      <td>{item.Email}</td>
-                      <td>{item.Gender}</td>
-                      <td>{item.Hobbies.join(",")}</td>
-                      <td>{item.Password}</td>
-                      <td> <Button id='edit'
-                        color='primary outline' onClick={()=> OnEditButton(item.id)} >
-                        Edit</Button> {"  "}
-                        <Button id='delete'
-                          onClick={() => onDelete(item.id)}
-                          color='danger'>Delete
-                        </Button></td>
-                    </tr>
-                  )
-                })
-              }
-
-            </tbody>
-          </Table>
-
-
-        </Container>
-      </Container>
-
-
-      <Modal show={show} onHide={handleClose}>
-        <Modal.Header closeButton>
-          <Modal.Title>Form</Modal.Title>
-        </Modal.Header>
-        <Form inline onSubmit={onHandleSubmit} >
-          <Modal.Body>
-            <FormGroup className="mb-2 mr-sm-2 mb-sm-0" >
-              <Label for="exampleFirstName" className="mr-sm-2">FirstName</Label>
-              <Input type="text" name="FirstName" id="exampleFirstName" placeholder="James" onChange={onInputChange} value={Profile.FirstName} />
-            </FormGroup>
-            <FormGroup className="mb-2 mr-sm-2 mb-sm-0" >
-              <Label for="exampleLastName" className="mr-sm-2">LastName</Label>
-              <Input type="text" name="LastName" id="exampleLastName" placeholder="Bond" onChange={onInputChange} value={Profile.LastName} />
-            </FormGroup>
-            <FormGroup className="mb-2 mr-sm-2 mb-sm-0">
-              <Label for="exampleEmail" className="mr-sm-2">E-Mail</Label>
-              <Input type="email" name="Email" id="exampleEmail" placeholder="abc@gmail.com" onChange={onInputChange} value={Profile.Email} />
-            </FormGroup>
-            <FormGroup className="mb-2 mr-sm-2 mb-sm-0">
-              <Label for="exampleUserName" className="mr-sm-2">UserName</Label>
-              <Input type="text" name="UserName" id="exampleUserName" placeholder="james123" onChange={onInputChange} value={Profile.UserName} />
-            </FormGroup>
-            <FormGroup>
-              <Label for="examplePassword">Password</Label>
-              <Input type="password" name="Password" id="examplePassword" placeholder="Enter Password" onChange={onInputChange} value={Profile.Password} />
-            </FormGroup>
-            <FormGroup>
-              <Label for="exampleConfirmPassword">ConfirmPassword</Label>
-              <Input type="password" name="ConfirmPassword" id="exampleConfirmPassword" placeholder="ConfirmPassword" onChange={onInputChange} value={Profile.ConfirmPassword} />
-            </FormGroup>
-            <div>
-              <label htmlFor="">Gender:</label>
-            </div>
-            <FormGroup check inline>
-              <Label  >
-                <Input type="radio" name='Gender'
-                  value="Male" onChange={onInputChange}
-                  checked={Profile.Gender.includes("Male")} />{' '}
-                Male
-              </Label>
-            </FormGroup>
-            <FormGroup  >
-              <Label check>
-                <Input type="radio" name='Gender'
-                  value="Female" onChange={onInputChange}
-                  checked={Profile.Gender.includes("Female")} />{' '}
-                Female
-              </Label>
-            </FormGroup>
-            <FormGroup >
-              <Label check>
-                <Input type="radio" name='Gender'
-                  value="Other" onChange={onInputChange}
-                  checked={Profile.Gender.includes("Other")} />{' '}
-                Other
-              </Label>
-            </FormGroup>
-
-
-            <div>
-              <span>Hobbies:</span>
-            </div>
-            <FormGroup check inline>
-
-              <Label check>
-                <Input type="checkbox"
-                  name='Hobbies'
-                  onChange={CheckBoxChanged}
-                  value="Cricket"
-                  checked={Profile.Hobbies.includes("Cricket")} />
-                Cricket
-              </Label>
-            </FormGroup>
-            <FormGroup check inline>
-              <Label check>
-                <Input type="checkbox"
-                  name='Hobbies'
-                  onChange={CheckBoxChanged}
-                  value="E-Sports"
-                  checked={Profile.Hobbies.includes("E-Sports")} />
-                E-Sports
-              </Label>
-            </FormGroup>
-            <FormGroup check inline>
-              <Label check>
-                <Input type="checkbox"
-                  name='Hobbies' onChange={CheckBoxChanged}
-                  value="Coding"
-                  checked={Profile.Hobbies.includes("Coding")} />
-                Coding
-              </Label>
-            </FormGroup>
-            <FormGroup check inline>
-              <Label check>
-                <Input type="checkbox"
-                  name='Hobbies'
-                  onChange={CheckBoxChanged}
-                  value="Writing"
-                  checked={Profile.Hobbies.includes("Writing")} />
-                Writing
-              </Label>
-            </FormGroup>
-          </Modal.Body>
-          <Modal.Footer>
-            <Button color="primary" Input type='submit'>Save</Button>{' '}
-          </Modal.Footer>
-
-        </Form>
-      </Modal>
-    </>
+    <Container>
+      <Header onAdd={() => setShowForm(true)} />
+      {showForm ? (
+        <EmployeeForm user={user} handleChange={handleChange} handleSubmit={handleSubmit} onCancel={() => setShowForm(false)} />
+      ) : (
+        <EmployeeTable profiles={profiles} onEdit={handleEdit} onDelete={handleDelete} />
+      )}
+    </Container>
   );
-}
+};
 
-export default Greet
+const Header = ({ onAdd }) => (
+  <Row className="m-2 py-2">
+    <Col className="d-flex justify-content-between align-items-center">
+      <h2>Employee Management</h2>
+      <Button className='add-btn' color="primary" onClick={onAdd}>Add Employee</Button>
+    </Col>
+  </Row>
+);
+
+const EmployeeForm = ({ user, handleChange, handleSubmit, onCancel }) => (
+  <Row>
+    <Col md={8} className="mx-auto">
+      <h4 className="my-3">{user.id ? 'Edit Employee' : 'Add Employee'}</h4>
+      <Form onSubmit={handleSubmit}>
+        <Row>
+          <Col><InputField name="firstName" value={user.firstName} placeholder="First Name" handleChange={handleChange} /></Col>
+          <Col><InputField name="lastName" value={user.lastName} placeholder="Last Name" handleChange={handleChange} /></Col>
+        </Row>
+        <GenderSelection gender={user.gender} handleChange={handleChange} />
+        <HobbiesSelection hobbies={user.hobbies} handleChange={handleChange} />
+        <InputField name="email" type="email" value={user.email} placeholder="Email" handleChange={handleChange} />
+        <Row>
+          <Col><InputField name="password" type="password" value={user.password} placeholder="Password" handleChange={handleChange} /></Col>
+          <Col><InputField name="cPassword" type="password" value={user.cPassword} placeholder="Confirm Password" handleChange={handleChange} /></Col>
+        </Row>
+        <div className="d-flex justify-content-end">
+          <Button type="submit" color="primary" className="mx-2">{user.id ? 'Update' : 'Save'}</Button>
+          <Button color="secondary" onClick={onCancel}>Cancel</Button>
+        </div>
+      </Form>
+    </Col>
+  </Row>
+);
+
+const EmployeeTable = ({ profiles, onEdit, onDelete }) => (
+  <Row>
+    <Col md={12}>
+      <h4 className="my-3">Employee Details</h4>
+      <Table hover dark>
+        <thead>
+          <tr>
+            <th>ID</th><th>First</th><th>Last</th><th>Gender</th><th>Hobbies</th><th>Email</th><th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {profiles.map((v) => (
+            <tr key={v.id}>
+              <td>{v.id}</td><td>{v.firstName}</td><td>{v.lastName}</td><td>{v.gender}</td><td>{v.hobbies.join(', ')}</td><td>{v.email}</td>
+              <td>
+                <Button color="info" size="sm" onClick={() => onEdit(v.id)}>Edit</Button>{' '}
+                <Button color="danger" size="sm" onClick={() => onDelete(v.id)}>Delete</Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </Col>
+  </Row>
+);
+
+const InputField = ({ name, type = 'text', value, placeholder, handleChange }) => (
+  <FormGroup>
+    <Input type={type} name={name} placeholder={placeholder} value={value} onChange={handleChange} required />
+  </FormGroup>
+);
+
+const GenderSelection = ({ gender, handleChange }) => (
+  <Col>
+    <h5>Gender</h5>
+    {['Male', 'Female', 'Other'].map((g) => (
+      <FormGroup check key={g}><Label check><Input type="radio" name="gender" value={g} checked={gender === g} onChange={handleChange} /> {g}</Label></FormGroup>
+    ))}
+  </Col>
+);
+
+const HobbiesSelection = ({ hobbies, handleChange }) => (
+  <Col>
+    <h5>Hobbies</h5>
+    {['Travel', 'Coding', 'Books', 'Music'].map((hobby) => (
+      <FormGroup check key={hobby}><Label check><Input type="checkbox" value={hobby} checked={hobbies.includes(hobby)} onChange={handleChange} /> {hobby}</Label></FormGroup>
+    ))}
+  </Col>
+);
+
+export default App;
